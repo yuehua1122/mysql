@@ -43,17 +43,11 @@ INSERT INTO `meeting room`.`customer` (`c_id`,`c_name`, `c_uid`) VALUES ('B10441
 INSERT INTO `meeting room`.`customer` (`c_id`,`c_name`, `c_uid`) VALUES ('B1044147','楊安發','1234561');
 INSERT INTO `meeting room`.`customer` (`c_id`,`c_name`, `c_uid`) VALUES ('B1044150','吳俊翊','1234562');
 
-INSERT INTO `meeting room`.`reserve` (`r_no`,`r_start`, `r_end`,`c_id`) VALUES ('1','2023-09-15 10:00','2023-09-15 11:00','B1044109');
-INSERT INTO `meeting room`.`reserve` (`r_no`,`r_start`, `r_end`,`c_id`) VALUES ('2','2023-09-15 15:00','2023-09-15 17:00','B1044124');
-INSERT INTO `meeting room`.`reserve` (`r_no`,`r_start`, `r_end`,`c_id`) VALUES ('3','2023-09-16 09:30','2023-09-16 11:20','B1044127');
-INSERT INTO `meeting room`.`reserve` (`r_no`,`r_start`, `r_end`,`c_id`) VALUES ('4','2023-09-16 13:00','2023-09-16 14:10','B1044147');
-INSERT INTO `meeting room`.`reserve` (`r_no`,`r_start`, `r_end`,`c_id`,`room_no`) VALUES ('1','2023-09-16 15:00','2023-09-16 16:00','B1044150','A005');
-
-INSERT INTO `meeting room`.`sign` (`s_no`,`s_in`, `s_out`,`c_uid`) VALUES ('1','2023-09-15 10:01','2023-09-15 10:55','1234567');
-INSERT INTO `meeting room`.`sign` (`s_no`,`s_in`, `s_out`,`c_uid`) VALUES ('2','2023-09-15 15:05','2023-09-15 16:50','1234568');
-INSERT INTO `meeting room`.`sign` (`s_no`,`s_in`, `s_out`,`c_uid`) VALUES ('3','2023-09-16 09:36','2023-09-16 11:18','1234569');
-INSERT INTO `meeting room`.`sign` (`s_no`,`s_in`, `s_out`,`c_uid`) VALUES ('4','2023-09-16 13:10','2023-09-16 14:06','1234561');
-INSERT INTO `meeting room`.`sign` (`s_no`,`s_in`, `s_out`,`c_uid`) VALUES ('5','2023-09-16 15:20','2023-09-16 15:50','1234562');
+INSERT INTO reserve(r_no,r_start,r_end,c_id,room_no) VALUES(1,'2023-11-01 00:01:00','2023-11-01 00:02:00','B1044127','A001');
+INSERT INTO reserve(r_no,r_start,r_end,c_id,room_no) VALUES(2,'2023-11-02 00:01:00','2023-11-02 00:02:00','B1044127','A001');
+INSERT INTO reserve(r_no,r_start,r_end,c_id,room_no) VALUES(3,'2023-11-03 00:01:00','2023-11-03 00:02:00','B1044127','A001');
+INSERT INTO reserve(r_no,r_start,r_end,c_id,room_no) VALUES(4,'2023-11-04 00:01:00','2023-11-04 00:02:00','B1044127','A001');
+INSERT INTO reserve(r_no,r_start,r_end,c_id,room_no) VALUES(5,'2023-11-05 00:01:00','2023-11-05 00:02:00','B1044127','A001');
 
 SELECT * FROM  `customer`;
 SELECT * FROM  `reserve`;
@@ -63,3 +57,28 @@ SHOW tables;
 
 truncate table reserve; 
 
+SET GLOBAL event_scheduler = ON;
+ALTER EVENT update_reserve_status
+ON SCHEDULE EVERY 5 SECOND   -- 每五秒檢查一次
+DO
+  UPDATE reserve 
+  SET r_del = 1 
+  WHERE r_end < NOW() AND r_del = 0;
+
+SHOW EVENTS
+
+
+CREATE TRIGGER trigger_update_reserve_del
+AFTER UPDATE ON sign
+FOR EACH ROW
+BEGIN
+    IF NEW.s_out IS NOT NULL THEN
+        UPDATE reserve
+        SET r_del = 1
+        WHERE r_no = NEW.s_no;  -- 假設 s_no 與 r_no 相關聯
+    END IF;
+END; 
+
+DROP TRIGGER IF EXISTS trigger_update_reserve_del;
+
+ALTER TABLE reserve AUTO_INCREMENT = 1;
